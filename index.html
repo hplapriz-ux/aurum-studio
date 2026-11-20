@@ -1,1 +1,739 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AURUM STUDIO — Personal Portrait Forge</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Cormorant Garamond', 'Georgia', 'serif'],
+            sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+          },
+          colors: {
+            obsidian: '#09090B',
+            charcoal: '#121216',
+            surface: '#18181E',
+            gold: {
+              300: '#F3D48B',
+              400: '#E5BE67',
+              500: '#D4A843',
+              600: '#B08628',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body {
+      background-color: #09090B;
+      color: #F4F4F5;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .gold-gradient-text {
+      background: linear-gradient(135deg, #F7E1A8 0%, #D4A843 55%, #9C721B 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .gold-btn {
+      background: linear-gradient(135deg, #EBC66E 0%, #C89B38 100%);
+      color: #09090B;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="min-h-screen bg-obsidian text-zinc-100 flex justify-center">
+  <div id="app" class="w-full max-w-md min-h-screen bg-charcoal border-x border-zinc-800/80 flex flex-col relative pb-24">
 
+    <!-- Top Header -->
+    <header class="sticky top-0 z-30 bg-charcoal/95 backdrop-blur-md border-b border-zinc-800/80 px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gold-500/15 border border-gold-500/40 flex items-center justify-center">
+          <i data-lucide="sparkles" class="w-4 h-4 text-gold-400"></i>
+        </div>
+        <div>
+          <h1 class="font-serif text-lg font-bold tracking-wider gold-gradient-text leading-none">AURUM STUDIO</h1>
+          <p class="text-[10px] uppercase tracking-[0.2em] text-zinc-400 mt-0.5">Portrait Forge</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button onclick="openKeyModal()" id="apiKeyStatusBtn" class="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-zinc-700 bg-surface text-zinc-300 hover:border-gold-500/60 flex items-center gap-1.5">
+          <i data-lucide="key-round" class="w-3.5 h-3.5 text-gold-400"></i>
+          <span id="apiKeyBadge">API Key</span>
+        </button>
+        <button onclick="showToast('Session active for Ibbu')" class="w-8 h-8 rounded-lg bg-surface border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-gold-400">
+          <i data-lucide="user" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main id="viewContainer" class="flex-1 px-4 py-4 space-y-5">
+
+      <!-- TAB 1: HOME -->
+      <section id="tab-home" class="space-y-5">
+        <div class="rounded-2xl bg-gradient-to-br from-surface via-charcoal to-obsidian border border-gold-500/25 p-4">
+          <p id="liveDateLabel" class="text-[11px] uppercase tracking-[0.18em] text-gold-400 font-semibold"></p>
+          <h2 class="font-serif text-2xl font-semibold text-white mt-1">Welcome back, Ibbu</h2>
+          <p class="text-xs text-zinc-400 mt-1">Select a face model, attach reference photos, and forge bespoke portraits.</p>
+
+          <div class="grid grid-cols-3 gap-2.5 mt-4">
+            <div class="rounded-xl bg-obsidian/80 border border-zinc-800 p-2.5">
+              <div class="text-xs text-zinc-400">Models</div>
+              <div id="statModelsCount" class="text-lg font-bold text-white mt-0.5">0</div>
+            </div>
+            <div class="rounded-xl bg-obsidian/80 border border-zinc-800 p-2.5">
+              <div class="text-xs text-zinc-400">Active Refs</div>
+              <div id="statActiveRefs" class="text-lg font-bold text-gold-400 mt-0.5">0/6</div>
+            </div>
+            <div class="rounded-xl bg-obsidian/80 border border-zinc-800 p-2.5">
+              <div class="text-xs text-zinc-400">Forged</div>
+              <div id="statCreationsCount" class="text-lg font-bold text-white mt-0.5">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-2.5">
+            <h3 class="text-xs uppercase tracking-[0.16em] text-zinc-400 font-semibold">Active Model</h3>
+            <button onclick="switchTab('models')" class="text-xs text-gold-400 hover:underline">Manage all</button>
+          </div>
+          <div id="homeActiveModelCard" class="rounded-2xl bg-surface border border-zinc-800 p-3.5"></div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-2.5">
+            <h3 class="text-xs uppercase tracking-[0.16em] text-zinc-400 font-semibold">Recent Creations</h3>
+            <button onclick="switchTab('gallery')" class="text-xs text-gold-400 hover:underline">View gallery</button>
+          </div>
+          <div id="homeRecentCreations" class="grid grid-cols-2 gap-3"></div>
+        </div>
+      </section>
+
+      <!-- TAB 2: STUDIO -->
+      <section id="tab-studio" class="hidden space-y-4">
+        <div class="rounded-2xl bg-surface border border-zinc-800 p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs uppercase tracking-wider text-zinc-400 font-semibold">Subject Model</span>
+            <select id="studioModelSelect" onchange="selectModel(this.value)" class="bg-obsidian border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-gold-500"></select>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between text-xs text-zinc-400 mb-1.5">
+              <span>Attached Face References</span>
+              <span id="studioRefCountBadge" class="text-gold-400 font-medium">0/6</span>
+            </div>
+            <div id="studioRefsStrip" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1"></div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl bg-surface border border-zinc-800 p-3.5 space-y-3">
+          <label for="promptInput" class="block text-xs uppercase tracking-wider text-zinc-400 font-semibold">Portrait Prompt</label>
+          <textarea id="promptInput" rows="4" placeholder="Describe lighting, outfit, setting, camera lens, and mood..." class="w-full rounded-xl bg-obsidian border border-zinc-700/90 p-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500"></textarea>
+
+          <div class="flex items-center justify-between gap-2">
+            <label for="captionInput" class="sr-only">Custom Caption</label>
+            <input id="captionInput" type="text" placeholder="Optional clean caption (saved with image)" class="flex-1 rounded-xl bg-obsidian border border-zinc-700/90 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-gold-500" />
+          </div>
+
+          <button id="forgeBtn" onclick="forgePortrait()" class="w-full py-3 rounded-xl font-semibold text-sm gold-btn flex items-center justify-center gap-2 shadow-lg shadow-gold-500/10 active:scale-[0.99] transition">
+            <i data-lucide="wand-2" class="w-4 h-4"></i>
+            <span>Forge Portrait</span>
+          </button>
+        </div>
+
+        <div id="studioResultBox" class="rounded-2xl bg-surface border border-zinc-800 p-3.5 min-h-[220px] flex flex-col items-center justify-center text-center">
+          <i data-lucide="image" class="w-8 h-8 text-zinc-600 mb-2"></i>
+          <p class="text-xs text-zinc-400">Your forged portrait will appear here.</p>
+          <p id="studioErrorText" class="text-xs text-rose-400 mt-2 hidden"></p>
+        </div>
+      </section>
+
+      <!-- TAB 3: MODELS -->
+      <section id="tab-models" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="font-serif text-xl font-semibold text-white">Model Library</h2>
+            <p class="text-xs text-zinc-400">Up to 6 reference photos per model, saved locally.</p>
+          </div>
+          <button onclick="openNewModelPrompt()" class="px-3 py-2 rounded-xl text-xs font-semibold gold-btn flex items-center gap-1">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>New Model</span>
+          </button>
+        </div>
+        <div id="modelsListContainer" class="space-y-3"></div>
+      </section>
+
+      <!-- TAB 4: GALLERY -->
+      <section id="tab-gallery" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="font-serif text-xl font-semibold text-white">Forged Gallery</h2>
+            <p class="text-xs text-zinc-400">Saved locally in your browser.</p>
+          </div>
+          <button onclick="clearCreations()" class="px-2.5 py-1.5 rounded-lg text-xs border border-zinc-700 text-zinc-300 hover:border-rose-500/60 hover:text-rose-300">
+            Clear All
+          </button>
+        </div>
+        <div id="galleryGrid" class="grid grid-cols-2 gap-3"></div>
+      </section>
+    </main>
+
+    <!-- Hidden File Input for Face References -->
+    <input id="refFileInput" type="file" accept="image/*" multiple class="hidden" onchange="handleRefFilesSelected(event)" />
+
+    <!-- API Key Modal -->
+    <div id="keyModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="w-full max-w-sm rounded-2xl bg-surface border border-zinc-700 p-4 space-y-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-serif text-lg font-semibold text-white">Gemini API Key</h3>
+          <button onclick="closeKeyModal()" class="text-zinc-400 hover:text-white">
+            <i data-lucide="x" class="w-4 h-4"></i>
+          </button>
+        </div>
+        <p class="text-xs text-zinc-400">Stored locally in your browser for this origin. Never commit real keys to a public GitHub repo.</p>
+        <input id="apiKeyInput" type="password" placeholder="AIza..." class="w-full rounded-xl bg-obsidian border border-zinc-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-gold-500" />
+        <div class="flex justify-end gap-2 pt-1">
+          <button onclick="closeKeyModal()" class="px-3 py-1.5 rounded-lg text-xs bg-obsidian border border-zinc-700 text-zinc-300">Cancel</button>
+          <button onclick="saveApiKey()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold gold-btn">Save Key</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-zinc-900 border border-gold-500/40 text-xs text-gold-300 shadow-xl"></div>
+
+    <!-- Bottom Navigation -->
+    <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md z-40 bg-obsidian/95 backdrop-blur-md border-t border-zinc-800 px-2 py-2 grid grid-cols-4 gap-1">
+      <button data-nav="home" onclick="switchTab('home')" class="nav-btn flex flex-col items-center py-1 rounded-xl text-gold-400">
+        <i data-lucide="home" class="w-4 h-4"></i>
+        <span class="text-[10px] mt-1 font-medium">Home</span>
+      </button>
+      <button data-nav="studio" onclick="switchTab('studio')" class="nav-btn flex flex-col items-center py-1 rounded-xl text-zinc-400">
+        <i data-lucide="sparkles" class="w-4 h-4"></i>
+        <span class="text-[10px] mt-1 font-medium">Studio</span>
+      </button>
+      <button data-nav="models" onclick="switchTab('models')" class="nav-btn flex flex-col items-center py-1 rounded-xl text-zinc-400">
+        <i data-lucide="users" class="w-4 h-4"></i>
+        <span class="text-[10px] mt-1 font-medium">Models</span>
+      </button>
+      <button data-nav="gallery" onclick="switchTab('gallery')" class="nav-btn flex flex-col items-center py-1 rounded-xl text-zinc-400">
+        <i data-lucide="layout-grid" class="w-4 h-4"></i>
+        <span class="text-[10px] mt-1 font-medium">Gallery</span>
+      </button>
+    </nav>
+  </div>
+
+  <script>
+    const DB_NAME = 'aurum_studio_db';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'state_store';
+    const MAX_REFS = 6;
+    const MODEL_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent';
+
+    let dbInstance = null;
+    let uploadTargetModelId = null;
+
+    let appState = {
+      activeTab: 'home',
+      activeModelId: 'chammu',
+      apiKey: '',
+      models: [
+        { id: 'chammu', name: 'Chammu', tag: 'Portrait Model', references: [] },
+        { id: 'muchi', name: 'Muchi', tag: 'Portrait Model', references: [] },
+        { id: 'nafi', name: 'Nafi', tag: 'Portrait Model', references: [] }
+      ],
+      creations: []
+    };
+
+    function openDB() {
+      return new Promise((resolve) => {
+        if (!('indexedDB' in window)) return resolve(null);
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(STORE_NAME)) {
+            db.createObjectStore(STORE_NAME);
+          }
+        };
+        req.onsuccess = (e) => {
+          dbInstance = e.target.result;
+          resolve(dbInstance);
+        };
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    async function loadPersistedState() {
+      const db = await openDB();
+      if (db) {
+        await new Promise((resolve) => {
+          try {
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const store = tx.objectStore(STORE_NAME);
+            const req = store.get('aurum_state');
+            req.onsuccess = () => {
+              if (req.result) {
+                appState = {
+                  ...appState,
+                  ...req.result,
+                  models: Array.isArray(req.result.models) && req.result.models.length
+                    ? req.result.models
+                    : appState.models,
+                  creations: Array.isArray(req.result.creations) ? req.result.creations : []
+                };
+              }
+              resolve();
+            };
+            req.onerror = () => resolve();
+          } catch {
+            resolve();
+          }
+        });
+      }
+      if (!appState.apiKey) {
+        try {
+          appState.apiKey = localStorage.getItem('aurum_gemini_api_key') || '';
+        } catch {}
+      }
+      if (!appState.models.some(m => m.id === appState.activeModelId)) {
+        appState.activeModelId = appState.models[0]?.id || '';
+      }
+    }
+
+    async function persistState() {
+      try {
+        localStorage.setItem('aurum_gemini_api_key', appState.apiKey || '');
+      } catch {}
+
+      const db = dbInstance || await openDB();
+      if (db) {
+        await new Promise((resolve) => {
+          try {
+            const tx = db.transaction(STORE_NAME, 'readwrite');
+            const store = tx.objectStore(STORE_NAME);
+            store.put({
+              activeTab: appState.activeTab,
+              activeModelId: appState.activeModelId,
+              apiKey: appState.apiKey,
+              models: appState.models,
+              creations: appState.creations
+            }, 'aurum_state');
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+          } catch {
+            resolve();
+          }
+        });
+      }
+    }
+
+    function getActiveModel() {
+      return appState.models.find(m => m.id === appState.activeModelId) || appState.models[0];
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => el.classList.add('hidden'), 2400);
+    }
+
+    function updateDateLabel() {
+      const now = new Date();
+      const formatted = now.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric'
+      }).toUpperCase();
+      const label = document.getElementById('liveDateLabel');
+      if (label) label.textContent = formatted;
+    }
+
+    function updateApiKeyBadge() {
+      const badge = document.getElementById('apiKeyBadge');
+      const btn = document.getElementById('apiKeyStatusBtn');
+      if (appState.apiKey && appState.apiKey.trim().length > 8) {
+        badge.textContent = 'Key Ready';
+        btn.classList.add('border-gold-500/50', 'text-gold-300');
+      } else {
+        badge.textContent = 'Set Key';
+        btn.classList.remove('border-gold-500/50', 'text-gold-300');
+      }
+    }
+
+    function openKeyModal() {
+      document.getElementById('apiKeyInput').value = appState.apiKey || '';
+      document.getElementById('keyModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeKeyModal() {
+      document.getElementById('keyModal').classList.add('hidden');
+    }
+
+    async function saveApiKey() {
+      appState.apiKey = document.getElementById('apiKeyInput').value.trim();
+      await persistState();
+      updateApiKeyBadge();
+      closeKeyModal();
+      showToast(appState.apiKey ? 'Gemini API key saved locally' : 'API key cleared');
+    }
+
+    function switchTab(tabName) {
+      appState.activeTab = tabName;
+      ['home', 'studio', 'models', 'gallery'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tabName);
+      });
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        const active = btn.dataset.nav === tabName;
+        btn.classList.toggle('text-gold-400', active);
+        btn.classList.toggle('text-zinc-400', !active);
+      });
+      persistState();
+      refreshAllViews();
+    }
+
+    async function selectModel(modelId) {
+      appState.activeModelId = modelId;
+      await persistState();
+      refreshAllViews();
+    }
+
+    function triggerRefUpload(modelId) {
+      uploadTargetModelId = modelId;
+      const input = document.getElementById('refFileInput');
+      input.value = '';
+      input.click();
+    }
+
+    function compressImageFile(file, maxDim = 1024, quality = 0.85) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => {
+            let { width, height } = img;
+            if (width > maxDim || height > maxDim) {
+              if (width >= height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            const base64 = dataUrl.split(',')[1] || '';
+            resolve({ mimeType: 'image/jpeg', base64, dataUrl });
+          };
+          img.onerror = reject;
+          img.src = reader.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function handleRefFilesSelected(event) {
+      const files = Array.from(event.target.files || []);
+      if (!files.length) return;
+      const model = appState.models.find(m => m.id === (uploadTargetModelId || appState.activeModelId));
+      if (!model) return;
+
+      const remaining = MAX_REFS - model.references.length;
+      if (remaining <= 0) {
+        showToast(`Maximum ${MAX_REFS} references reached for ${model.name}`);
+        return;
+      }
+
+      const slice = files.slice(0, remaining);
+      for (const file of slice) {
+        try {
+          const compressed = await compressImageFile(file);
+          model.references.push(compressed);
+        } catch {
+          showToast('Could not read an image file');
+        }
+      }
+
+      await persistState();
+      refreshAllViews();
+      showToast(`${model.name}: ${model.references.length}/${MAX_REFS} references saved`);
+    }
+
+    async function removeReference(modelId, index) {
+      const model = appState.models.find(m => m.id === modelId);
+      if (!model) return;
+      model.references.splice(index, 1);
+      await persistState();
+      refreshAllViews();
+      showToast('Reference photo removed');
+    }
+
+    async function openNewModelPrompt() {
+      const name = prompt('Enter new model name:');
+      if (!name || !name.trim()) return;
+      const cleanName = name.trim();
+      const id = `${cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now().toString(36)}`;
+      appState.models.push({
+        id,
+        name: cleanName,
+        tag: 'Portrait Model',
+        references: []
+      });
+      appState.activeModelId = id;
+      await persistState();
+      refreshAllViews();
+      showToast(`Added model ${cleanName}`);
+    }
+
+    function renderModelsLibrary() {
+      const container = document.getElementById('modelsListContainer');
+      container.innerHTML = appState.models.map(model => {
+        const count = model.references.length;
+        const isActive = model.id === appState.activeModelId;
+        const thumbs = model.references.map((ref, idx) => `
+          <div class="relative w-14 h-14 rounded-xl overflow-hidden border border-zinc-700 shrink-0">
+            <img src="${ref.dataUrl}" alt="${model.name} reference ${idx + 1}" class="w-full h-full object-cover" />
+            <button onclick="removeReference('${model.id}', ${idx})" aria-label="Remove reference" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/80 text-white text-[10px] flex items-center justify-center">×</button>
+          </div>
+        `).join('');
+
+        return `
+          <div class="rounded-2xl bg-surface border ${isActive ? 'border-gold-500/60' : 'border-zinc-800'} p-3.5 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="font-semibold text-sm text-white">${model.name}</h3>
+                  ${isActive ? '<span class="text-[10px] px-2 py-0.5 rounded-full bg-gold-500/20 text-gold-300 font-medium">Active</span>' : ''}
+                </div>
+                <p class="text-xs text-zinc-400 mt-0.5">${count}/${MAX_REFS} face references</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                ${!isActive ? `<button onclick="selectModel('${model.id}')" class="px-2.5 py-1.5 rounded-lg text-xs bg-obsidian border border-zinc-700 text-zinc-200 hover:border-gold-500">Use</button>` : ''}
+                <button onclick="triggerRefUpload('${model.id}')" ${count >= MAX_REFS ? 'disabled' : ''} class="px-2.5 py-1.5 rounded-lg text-xs font-medium gold-btn disabled:opacity-40 flex items-center gap-1">
+                  <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                  <span>Add Photo</span>
+                </button>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
+              ${thumbs || '<span class="text-xs text-zinc-500">No face references uploaded yet (0/6).</span>'}
+            </div>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons();
+    }
+
+    function renderStudioRefsStrip() {
+      const model = getActiveModel();
+      const select = document.getElementById('studioModelSelect');
+      select.innerHTML = appState.models.map(m =>
+        `<option value="${m.id}" ${m.id === model?.id ? 'selected' : ''}>${m.name} (${m.references.length}/${MAX_REFS})</option>`
+      ).join('');
+
+      const count = model ? model.references.length : 0;
+      document.getElementById('studioRefCountBadge').textContent = `${count}/${MAX_REFS}`;
+
+      const strip = document.getElementById('studioRefsStrip');
+      const items = (model?.references || []).map((ref, idx) => `
+        <div class="relative w-12 h-12 rounded-xl overflow-hidden border border-zinc-700 shrink-0">
+          <img src="${ref.dataUrl}" alt="Ref ${idx + 1}" class="w-full h-full object-cover" />
+          <button onclick="removeReference('${model.id}', ${idx})" class="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-black/80 text-white text-[10px] flex items-center justify-center">×</button>
+        </div>
+      `).join('');
+
+      const addBtn = count < MAX_REFS ? `
+        <button onclick="triggerRefUpload('${model?.id || ''}')" class="w-12 h-12 rounded-xl border border-dashed border-zinc-700 hover:border-gold-500 flex flex-col items-center justify-center text-zinc-400 hover:text-gold-400 shrink-0">
+          <i data-lucide="plus" class="w-4 h-4"></i>
+        </button>
+      ` : '';
+
+      strip.innerHTML = `${items}${addBtn}`;
+      lucide.createIcons();
+    }
+
+    function renderHomeAndGallery() {
+      const model = getActiveModel();
+      const refCount = model ? model.references.length : 0;
+
+      document.getElementById('statModelsCount').textContent = String(appState.models.length);
+      document.getElementById('statActiveRefs').textContent = `${refCount}/${MAX_REFS}`;
+      document.getElementById('statCreationsCount').textContent = String(appState.creations.length);
+
+      document.getElementById('homeActiveModelCard').innerHTML = model ? `
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="font-semibold text-sm text-white">${model.name}</div>
+            <div class="text-xs text-zinc-400 mt-0.5">${refCount}/${MAX_REFS} reference photos attached</div>
+          </div>
+          <button onclick="switchTab('studio')" class="px-3 py-1.5 rounded-lg text-xs font-semibold gold-btn">Open Studio</button>
+        </div>
+      ` : '';
+
+      const recent = appState.creations.slice(0, 2);
+      document.getElementById('homeRecentCreations').innerHTML = recent.length
+        ? recent.map(c => `
+            <div class="rounded-xl overflow-hidden bg-surface border border-zinc-800">
+              <img src="${c.dataUrl}" alt="${c.modelName}" class="w-full aspect-square object-cover" />
+              <div class="p-2">
+                <div class="text-xs font-medium text-white truncate">${c.modelName}</div>
+                ${c.caption ? `<div class="text-[11px] text-gold-300 truncate mt-0.5">${c.caption}</div>` : ''}
+              </div>
+            </div>
+          `).join('')
+        : '<div class="col-span-2 rounded-xl bg-surface border border-zinc-800 p-4 text-xs text-zinc-400 text-center">No forged portraits yet.</div>';
+
+      document.getElementById('galleryGrid').innerHTML = appState.creations.length
+        ? appState.creations.map(c => `
+            <div class="rounded-xl overflow-hidden bg-surface border border-zinc-800">
+              <img src="${c.dataUrl}" alt="${c.modelName}" class="w-full aspect-square object-cover" />
+              <div class="p-2">
+                <div class="text-xs font-medium text-white truncate">${c.modelName}</div>
+                ${c.caption ? `<div class="text-[11px] text-gold-300 truncate mt-0.5">${c.caption}</div>` : ''}
+              </div>
+            </div>
+          `).join('')
+        : '<div class="col-span-2 rounded-xl bg-surface border border-zinc-800 p-6 text-xs text-zinc-400 text-center">Your gallery is empty.</div>';
+    }
+
+    async function clearCreations() {
+      appState.creations = [];
+      await persistState();
+      refreshAllViews();
+      showToast('Gallery cleared');
+    }
+
+    function refreshAllViews() {
+      updateDateLabel();
+      updateApiKeyBadge();
+      renderHomeAndGallery();
+      renderStudioRefsStrip();
+      renderModelsLibrary();
+      lucide.createIcons();
+    }
+
+    async function forgePortrait() {
+      const errorEl = document.getElementById('studioErrorText');
+      const resultBox = document.getElementById('studioResultBox');
+      const forgeBtn = document.getElementById('forgeBtn');
+      errorEl.classList.add('hidden');
+
+      const prompt = document.getElementById('promptInput').value.trim();
+      const caption = document.getElementById('captionInput').value.trim();
+      const model = getActiveModel();
+
+      if (!appState.apiKey) {
+        errorEl.textContent = 'Please set your Gemini API key using the "Set Key" button at the top.';
+        errorEl.classList.remove('hidden');
+        openKeyModal();
+        return;
+      }
+
+      if (!prompt) {
+        errorEl.textContent = 'Enter a portrait prompt before forging.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
+
+      const parts = [];
+      (model?.references || []).forEach(ref => {
+        if (ref.base64) {
+          parts.push({
+            inlineData: {
+              mimeType: ref.mimeType || 'image/jpeg',
+              data: ref.base64
+            }
+          });
+        }
+      });
+
+      const finalPrompt = model
+        ? `Subject identity: ${model.name}. ${prompt}`
+        : prompt;
+      parts.push({ text: finalPrompt });
+
+      forgeBtn.disabled = true;
+      forgeBtn.innerHTML = '<span>Forging...</span>';
+      resultBox.innerHTML = '<p class="text-xs text-gold-300 animate-pulse">Generating portrait with Gemini...</p>';
+
+      try {
+        const res = await fetch(`${MODEL_ENDPOINT}?key=${encodeURIComponent(appState.apiKey)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: {
+              responseModalities: ['TEXT', 'IMAGE']
+            }
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data?.error?.message || `HTTP ${res.status}`);
+        }
+
+        const candidateParts = data?.candidates?.[0]?.content?.parts || [];
+        const imgPart = candidateParts.find(p => p.inlineData?.data);
+        if (!imgPart) {
+          throw new Error('No image returned by model.');
+        }
+
+        const mime = imgPart.inlineData.mimeType || 'image/png';
+        const dataUrl = `data:${mime};base64,${imgPart.inlineData.data}`;
+
+        appState.creations.unshift({
+          id: Date.now().toString(),
+          modelName: model?.name || 'Custom',
+          caption,
+          dataUrl
+        });
+        await persistState();
+        refreshAllViews();
+
+        resultBox.innerHTML = `
+          <img src="${dataUrl}" alt="Forged portrait" class="w-full rounded-xl object-cover max-h-80" />
+          ${caption ? `<p class="text-xs text-gold-300 mt-2.5 font-medium">${caption}</p>` : ''}
+        `;
+        showToast('Portrait forged and saved');
+      } catch (err) {
+        resultBox.innerHTML = `
+          <i data-lucide="alert-circle" class="w-7 h-7 text-rose-400 mb-2"></i>
+          <p class="text-xs text-rose-400 break-words">${err.message || 'Generation failed. Please try again.'}</p>
+        `;
+        lucide.createIcons();
+      } finally {
+        forgeBtn.disabled = false;
+        forgeBtn.innerHTML = '<i data-lucide="wand-2" class="w-4 h-4"></i><span>Forge Portrait</span>';
+        lucide.createIcons();
+      }
+    }
+
+    (async function init() {
+      await loadPersistedState();
+      switchTab(appState.activeTab || 'home');
+    })();
+  </script>
+</body>
+</html>
