@@ -69,10 +69,10 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <button onclick="openKeyModal()" id="apiKeyStatusBtn" class="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-zinc-700 bg-surface text-zinc-300 hover:border-gold-500/60 flex items-center gap-1.5">
-          <i data-lucide="key-round" class="w-3.5 h-3.5 text-gold-400"></i>
-          <span id="apiKeyBadge">API Key</span>
-        </button>
+        <span class="px-2.5 py-1.5 rounded-lg text-xs font-medium border border-gold-500/40 bg-surface text-gold-300 flex items-center gap-1.5">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-gold-400"></i>
+          <span>Free Mode</span>
+        </span>
         <button onclick="showToast('Session active for Ibbu')" class="w-8 h-8 rounded-lg bg-surface border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-gold-400">
           <i data-lucide="user" class="w-4 h-4"></i>
         </button>
@@ -194,24 +194,6 @@
     <!-- Hidden File Input for Face References -->
     <input id="refFileInput" type="file" accept="image/*" multiple class="hidden" onchange="handleRefFilesSelected(event)" />
 
-    <!-- API Key Modal -->
-    <div id="keyModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="w-full max-w-sm rounded-2xl bg-surface border border-zinc-700 p-4 space-y-3">
-        <div class="flex items-center justify-between">
-          <h3 class="font-serif text-lg font-semibold text-white">Gemini API Key</h3>
-          <button onclick="closeKeyModal()" class="text-zinc-400 hover:text-white">
-            <i data-lucide="x" class="w-4 h-4"></i>
-          </button>
-        </div>
-        <p class="text-xs text-zinc-400">Stored locally in your browser for this origin. Never commit real keys to a public GitHub repo.</p>
-        <input id="apiKeyInput" type="password" placeholder="AIza..." class="w-full rounded-xl bg-obsidian border border-zinc-700 px-3 py-2 text-xs text-white focus:outline-none focus:border-gold-500" />
-        <div class="flex justify-end gap-2 pt-1">
-          <button onclick="closeKeyModal()" class="px-3 py-1.5 rounded-lg text-xs bg-obsidian border border-zinc-700 text-zinc-300">Cancel</button>
-          <button onclick="saveApiKey()" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold gold-btn">Save Key</button>
-        </div>
-      </div>
-    </div>
-
     <!-- Toast -->
     <div id="toast" class="hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full bg-zinc-900 border border-gold-500/40 text-xs text-gold-300 shadow-xl"></div>
 
@@ -241,7 +223,7 @@
     const DB_VERSION = 1;
     const STORE_NAME = 'state_store';
     const MAX_REFS = 6;
-    const MODEL_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent';
+    const FREE_IMAGE_BASE = 'https://image.pollinations.ai/prompt/';
 
     let dbInstance = null;
     let uploadTargetModelId = null;
@@ -249,7 +231,6 @@
     let appState = {
       activeTab: 'home',
       activeModelId: 'chammu',
-      apiKey: '',
       models: [
         { id: 'chammu', name: 'Chammu', tag: 'Portrait Model', references: [] },
         { id: 'muchi', name: 'Muchi', tag: 'Portrait Model', references: [] },
@@ -303,21 +284,12 @@
           }
         });
       }
-      if (!appState.apiKey) {
-        try {
-          appState.apiKey = localStorage.getItem('aurum_gemini_api_key') || '';
-        } catch {}
-      }
       if (!appState.models.some(m => m.id === appState.activeModelId)) {
         appState.activeModelId = appState.models[0]?.id || '';
       }
     }
 
     async function persistState() {
-      try {
-        localStorage.setItem('aurum_gemini_api_key', appState.apiKey || '');
-      } catch {}
-
       const db = dbInstance || await openDB();
       if (db) {
         await new Promise((resolve) => {
@@ -327,7 +299,6 @@
             store.put({
               activeTab: appState.activeTab,
               activeModelId: appState.activeModelId,
-              apiKey: appState.apiKey,
               models: appState.models,
               creations: appState.creations
             }, 'aurum_state');
@@ -361,36 +332,6 @@
       }).toUpperCase();
       const label = document.getElementById('liveDateLabel');
       if (label) label.textContent = formatted;
-    }
-
-    function updateApiKeyBadge() {
-      const badge = document.getElementById('apiKeyBadge');
-      const btn = document.getElementById('apiKeyStatusBtn');
-      if (appState.apiKey && appState.apiKey.trim().length > 8) {
-        badge.textContent = 'Key Ready';
-        btn.classList.add('border-gold-500/50', 'text-gold-300');
-      } else {
-        badge.textContent = 'Set Key';
-        btn.classList.remove('border-gold-500/50', 'text-gold-300');
-      }
-    }
-
-    function openKeyModal() {
-      document.getElementById('apiKeyInput').value = appState.apiKey || '';
-      document.getElementById('keyModal').classList.remove('hidden');
-      lucide.createIcons();
-    }
-
-    function closeKeyModal() {
-      document.getElementById('keyModal').classList.add('hidden');
-    }
-
-    async function saveApiKey() {
-      appState.apiKey = document.getElementById('apiKeyInput').value.trim();
-      await persistState();
-      updateApiKeyBadge();
-      closeKeyModal();
-      showToast(appState.apiKey ? 'Gemini API key saved locally' : 'API key cleared');
     }
 
     function switchTab(tabName) {
@@ -626,11 +567,19 @@
 
     function refreshAllViews() {
       updateDateLabel();
-      updateApiKeyBadge();
       renderHomeAndGallery();
       renderStudioRefsStrip();
       renderModelsLibrary();
       lucide.createIcons();
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
     }
 
     async function forgePortrait() {
@@ -643,65 +592,35 @@
       const caption = document.getElementById('captionInput').value.trim();
       const model = getActiveModel();
 
-      if (!appState.apiKey) {
-        errorEl.textContent = 'Please set your Gemini API key using the "Set Key" button at the top.';
-        errorEl.classList.remove('hidden');
-        openKeyModal();
-        return;
-      }
-
       if (!prompt) {
         errorEl.textContent = 'Enter a portrait prompt before forging.';
         errorEl.classList.remove('hidden');
         return;
       }
 
-      const parts = [];
-      (model?.references || []).forEach(ref => {
-        if (ref.base64) {
-          parts.push({
-            inlineData: {
-              mimeType: ref.mimeType || 'image/jpeg',
-              data: ref.base64
-            }
-          });
-        }
-      });
-
       const finalPrompt = model
-        ? `Subject identity: ${model.name}. ${prompt}`
+        ? `Portrait of ${model.name}, ${prompt}`
         : prompt;
-      parts.push({ text: finalPrompt });
+
+      const seed = Math.floor(Math.random() * 900000) + 100000;
+      const url = `${FREE_IMAGE_BASE}${encodeURIComponent(finalPrompt)}?width=768&height=768&seed=${seed}&nologo=true`;
 
       forgeBtn.disabled = true;
       forgeBtn.innerHTML = '<span>Forging...</span>';
-      resultBox.innerHTML = '<p class="text-xs text-gold-300 animate-pulse">Generating portrait with Gemini...</p>';
+      resultBox.innerHTML = '<p class="text-xs text-gold-300 animate-pulse">Generating image without billing...</p>';
 
       try {
-        const res = await fetch(`${MODEL_ENDPOINT}?key=${encodeURIComponent(appState.apiKey)}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts }],
-            generationConfig: {
-              responseModalities: ['TEXT', 'IMAGE']
-            }
-          })
-        });
-
-        const data = await res.json();
+        const res = await fetch(url);
         if (!res.ok) {
-          throw new Error(data?.error?.message || `HTTP ${res.status}`);
+          throw new Error(`Free endpoint returned HTTP ${res.status} (rate limit or temporary busy)`);
         }
 
-        const candidateParts = data?.candidates?.[0]?.content?.parts || [];
-        const imgPart = candidateParts.find(p => p.inlineData?.data);
-        if (!imgPart) {
-          throw new Error('No image returned by model.');
+        const blob = await res.blob();
+        if (!blob.type.startsWith('image/')) {
+          throw new Error('Endpoint did not return an image.');
         }
 
-        const mime = imgPart.inlineData.mimeType || 'image/png';
-        const dataUrl = `data:${mime};base64,${imgPart.inlineData.data}`;
+        const dataUrl = await blobToDataUrl(blob);
 
         appState.creations.unshift({
           id: Date.now().toString(),
